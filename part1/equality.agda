@@ -71,7 +71,90 @@ postulate
         suc n + m
     ∎
 
-{- iou: ≤-Reasoning -}
+data _≤_ : ℕ → ℕ → Set where
+    z≤n : ∀ {n : ℕ}
+        → zero ≤ n
+    
+    s≤s : ∀ {m n : ℕ}
+        → m ≤ n
+        → suc m ≤ suc n
+
+infix 4 _≤_
+
+≤-refl : ∀ {n : ℕ} → n ≤ n
+≤-refl {zero} = z≤n 
+≤-refl {suc n} = s≤s ≤-refl
+
+≤-refl′ : ∀ {n m : ℕ} → n ≡ m → n ≤ m
+≤-refl′ refl = ≤-refl
+
+≤-trans : ∀ {m n p : ℕ} → m ≤ n → n ≤ p → m ≤ p
+≤-trans z≤n _ = z≤n
+≤-trans (s≤s m≤n) (s≤s n≤p) = s≤s (≤-trans m≤n n≤p)
+
+module ≤-Reasoning where
+    infix 1 ≤-begin_
+    infixr 2 _≤⟨⟩_ step-≤
+    infix 3 _≤-∎
+
+    ≤-begin_ : ∀ {x y : ℕ} → x ≤ y → x ≤ y
+    ≤-begin x≤y = x≤y
+
+    _≤⟨⟩_ : ∀ (x : ℕ) {y : ℕ} → x ≤ y → x ≤ y
+    x ≤⟨⟩ x≤y = x≤y
+
+    step-≤ : ∀ (x {y z} : ℕ) → y ≤ z → x ≤ y → x ≤ z
+    step-≤ x y≤z x≤y = ≤-trans x≤y y≤z
+
+    syntax step-≤ x y≤z x≤y = x ≤⟨ x≤y ⟩ y≤z
+
+    _≤-∎ : ∀ (x : ℕ) → x ≤ x
+    x ≤-∎ = ≤-refl
+
+open ≤-Reasoning
+
++-monoˡ-≤ : ∀ (m n p : ℕ) → m ≤ n → m + p ≤ n + p
++-monoˡ-≤ m n zero m≤n = ≤-begin
+        m + zero
+    ≤⟨ ≤-refl′ (+-identity m) ⟩
+        m
+    ≤⟨ m≤n ⟩
+        n
+    ≤⟨ ≤-refl′ (sym (+-identity n)) ⟩
+        n + zero
+    ≤-∎
++-monoˡ-≤ m n (suc p) m≤n = ≤-begin
+        m + suc p
+    ≤⟨ ≤-refl′ (+-suc m p) ⟩
+        suc (m + p)
+    ≤⟨ s≤s (+-monoˡ-≤ m n p m≤n) ⟩
+        suc (n + p)
+    ≤⟨ ≤-refl′ (sym (+-suc n p)) ⟩
+        n + suc p
+    ≤-∎
+
++-monoʳ-≤ : ∀ (n p q : ℕ) → p ≤ q → n + p ≤ n + q
++-monoʳ-≤ zero p q p≤q = p≤q
++-monoʳ-≤ (suc n) p q p≤q = ≤-begin
+        suc n + p
+    ≤⟨ ≤-refl′ (+-comm (suc n) p) ⟩
+        p + suc n
+    ≤⟨ ≤-refl′ (+-suc p n) ⟩
+        suc (p + n)
+    ≤⟨ ≤-refl′ (cong suc (+-comm p n)) ⟩
+        suc (n + p)
+    ≤⟨ s≤s (+-monoʳ-≤ n p q p≤q) ⟩
+        suc (n + q)
+    ≤-∎
+
++-mono-≤ : ∀ (m n p q : ℕ) → m ≤ n → p ≤ q → m + p ≤ n + q
++-mono-≤ m n p q m≤n p≤q = ≤-begin
+        m + p
+    ≤⟨ +-monoˡ-≤ m n p m≤n ⟩
+        n + p
+    ≤⟨ +-monoʳ-≤ n p q p≤q ⟩
+        n + q
+    ≤-∎
 
 data even : ℕ → Set
 data odd : ℕ → Set
